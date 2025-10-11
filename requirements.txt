@@ -1,0 +1,60 @@
+# FastAPI and web framework dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Pydantic for data validation and settings
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# AI and agent dependencies
+agno>=0.1.0
+groq>=0.4.1
+
+# Data sources and tools
+yfinance>=0.2.28
+newspaper4k>=0.9.2
+duckduckgo-search>=3.9.6
+
+# HTTP client for API calls
+httpx==0.25.2
+aiohttp==3.9.1
+
+# Environment and configuration
+python-dotenv==1.0.0
+
+# Logging and monitoring
+structlog==23.2.0
+
+# Testing dependencies (for development)
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-timeout==2.2.0
+pytest-xdist==3.5.0
+pytest-mock==3.12.0
+httpx==0.25.2
+psutil==5.9.6
+coverage==7.3.2
+
+# Development dependencies
+black==23.11.0
+isort==5.12.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Security
+cryptography>=42.0.0
+
+# Streaming and async support
+sse-starlette==1.8.2
+
+# Data processing (optional - can install separately)
+# pandas==2.1.4
+numpy>=1.25.2
+
+# Date and time handling
+python-dateutil==2.8.2
+
+# JSON handling
+orjson==3.9.10

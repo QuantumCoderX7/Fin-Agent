@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  financial-ai-agents:
+    environment:
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - ENABLE_RELOAD=false
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+    
+  nginx:
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    environment:
+      - NGINX_HOST=yourdomain.com
+      - NGINX_PORT=80

@@ -1,0 +1,165 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: financial-ai-agents
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-keys
+  namespace: financial-ai-agents
+type: Opaque
+stringData:
+  GROQ_API_KEY: "your_groq_api_key_here"
+  PHI_API_KEY: "your_phi_api_key_here"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: financial-ai-agents
+data:
+  APP_NAME: "Financial AI Agents"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+  API_V1_PREFIX: "/api/v1"
+  DEFAULT_MODEL: "qwen/qwen3-32b"
+  MAX_SOURCES: "10"
+  REQUEST_TIMEOUT: "300"
+  CORS_ORIGINS: '["https://yourdomain.com"]'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financial-ai-agents
+  namespace: financial-ai-agents
+  labels:
+    app: financial-ai-agents
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: financial-ai-agents
+  template:
+    metadata:
+      labels:
+        app: financial-ai-agents
+    spec:
+      containers:
+      - name: financial-ai-agents
+        image: your-registry.com/financial-ai-agents:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: GROQ_API_KEY
+        - name: PHI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: PHI_API_KEY
+        envFrom:
+        - configMapRef:
+            name: app-config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: financial-ai-agents-service
+  namespace: financial-ai-agents
+spec:
+  selector:
+    app: financial-ai-agents
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: financial-ai-agents-ingress
+  namespace: financial-ai-agents
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - api.yourdomain.com
+    secretName: financial-ai-agents-tls
+  rules:
+  - host: api.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: financial-ai-agents-service
+            port:
+              number: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: financial-ai-agents-hpa
+  namespace: financial-ai-agents
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: financial-ai-agents
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
