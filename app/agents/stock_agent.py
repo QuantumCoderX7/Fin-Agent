@@ -290,28 +290,70 @@ class StockAgent(BaseAgent):
         """Parse AI response into structured format."""
         try:
             import json
-            
-            # Try to extract JSON from the response
+
+            # Try to extract JSON object from the response (first { .. last })
             start_idx = ai_response.find('{')
             end_idx = ai_response.rfind('}') + 1
-            
-            if start_idx != -1 and end_idx != -1:
+
+            parsed = None
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
                 json_str = ai_response[start_idx:end_idx]
-                parsed = json.loads(json_str)
-                return parsed
-            else:
-                # Fallback parsing if JSON format is not found
+                try:
+                    parsed = json.loads(json_str)
+                except Exception:
+                    parsed = None
+
+            # If the model returned a full StockAnalysisResponse (with "analyses"),
+            # extract the matching analysis for the requested symbol.
+            if isinstance(parsed, dict) and "analyses" in parsed and isinstance(parsed.get("analyses"), list):
+                symbol = stock_data.get("symbol")
+                match = None
+                for item in parsed.get("analyses", []):
+                    if isinstance(item, dict) and item.get("symbol") == symbol:
+                        match = item
+                        break
+
+                # Fallback to first analysis if no exact symbol match
+                if match is None and parsed.get("analyses"):
+                    first = parsed.get("analyses")[0]
+                    match = first if isinstance(first, dict) else None
+
+                if match:
+                    # Support multiple possible field names from different LLM outputs
+                    summary = match.get("analysis_summary") or match.get("summary") or match.get("analysis") or ""
+                    return {
+                        "summary": summary,
+                        "recommendation": match.get("recommendation", "HOLD"),
+                        "risk_level": match.get("risk_level", "MEDIUM"),
+                        "strengths": match.get("strengths", []) or [],
+                        "weaknesses": match.get("weaknesses", []) or [],
+                        "catalysts": match.get("catalysts", []) or []
+                    }
+
+            # If parsed is a dict with per-stock analysis fields, normalize and return
+            if isinstance(parsed, dict):
+                summary = parsed.get("summary") or parsed.get("analysis_summary") or parsed.get("analysis") or (ai_response[:500] + "..." if len(ai_response) > 500 else ai_response)
                 return {
-                    "summary": ai_response[:500] + "..." if len(ai_response) > 500 else ai_response,
-                    "recommendation": "HOLD",
-                    "risk_level": "MEDIUM",
-                    "strengths": ["Analysis available in summary"],
-                    "weaknesses": ["Detailed breakdown not available"],
-                    "catalysts": ["Market conditions", "Company performance"]
+                    "summary": summary,
+                    "recommendation": parsed.get("recommendation", "HOLD"),
+                    "risk_level": parsed.get("risk_level", "MEDIUM"),
+                    "strengths": parsed.get("strengths", []) or [],
+                    "weaknesses": parsed.get("weaknesses", []) or [],
+                    "catalysts": parsed.get("catalysts", []) or []
                 }
-                
+
+            # Fallback parsing when no JSON could be decoded
+            return {
+                "summary": ai_response[:500] + "..." if len(ai_response) > 500 else ai_response,
+                "recommendation": "HOLD",
+                "risk_level": "MEDIUM",
+                "strengths": ["Analysis available in summary"],
+                "weaknesses": ["Detailed breakdown not available"],
+                "catalysts": ["Market conditions", "Company performance"]
+            }
+
         except Exception:
-            # Fallback if parsing fails
+            # Final fallback
             return {
                 "summary": "Analysis completed but formatting failed. Raw analysis available.",
                 "recommendation": "HOLD",
@@ -363,11 +405,32 @@ class StockAgent(BaseAgent):
             4. Sector/industry considerations
             5. Overall investment thesis for each stock
             
-            Format as a professional investment report.
+            Format as a professional investment report. Do not include any <think> tags or preparation notes in the output.
+            Keep responses concise and focused on actionable insights. Skip boilerplate like 'Prepared by' or disclaimers.
             """
             
             comparison_response = await self._get_ai_analysis(prompt)
-            return comparison_response
+            
+            # Clean up LLM response
+            # Remove <think>...</think> blocks
+            import re
+            cleaned = re.sub(r'<think>.*?</think>', '', comparison_response, flags=re.DOTALL)
+            
+            # Remove markdown front matter if present (between --- blocks at start)
+            cleaned = re.sub(r'^---\n.*?\n---\n', '', cleaned, flags=re.DOTALL)
+            
+            # Remove disclaimer section if present
+            cleaned = re.sub(r'\n*Disclaimer:.*$', '', cleaned, flags=re.DOTALL)
+            
+            # Remove report header boilerplate
+            cleaned = re.sub(r'^.*?Investment Analysis Report:?', 'Investment Analysis Report:', cleaned, flags=re.DOTALL)
+            cleaned = re.sub(r'Prepared by.*?\n', '', cleaned)
+            cleaned = re.sub(r'Date:.*?\n', '', cleaned)
+            
+            # Clean up any double newlines and trailing whitespace
+            cleaned = re.sub(r'\n{3,}', '\n\n', cleaned.strip())
+            
+            return cleaned
             
         except Exception as e:
             return f"Comparative analysis failed: {str(e)}"

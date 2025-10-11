@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { TrendingUp, Plus, X, BarChart3, Info } from 'lucide-react';
 import { stockAPI, parseSSEData } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
-import StreamingOutput from '../components/StreamingOutput';
+import StockAnalysisResults from '../components/StockAnalysisResults';
 
 const StockAnalysis = () => {
   const [formData, setFormData] = useState({
@@ -425,13 +425,33 @@ const StockAnalysis = () => {
 
       {/* Results */}
       {(result || streamingContent || isStreaming) && (
-        <StreamingOutput
-          isStreaming={isStreaming}
-          content={streamingContent || (result ? JSON.stringify(result, null, 2) : '')}
-          progress={progress}
-          error={error}
-          title="Stock Analysis Results"
-        />
+        <div className="card">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Stock Analysis Results</h2>
+          {error ? (
+            <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg">
+              <p className="text-danger-800">{error}</p>
+            </div>
+          ) : (
+            <StockAnalysisResults
+              result={result}
+              isStreaming={isStreaming}
+              streamingContent={streamingContent}
+            />
+          )}
+          {(isAnalyzing || isStreaming) && progress !== null && (
+            <div className="mt-4">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-primary-600 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+                />
+              </div>
+              <p className="text-sm text-gray-600 mt-2">
+                Analysis in progress: {Math.round(progress)}%
+              </p>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
