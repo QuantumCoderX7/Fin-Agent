@@ -10,6 +10,7 @@ A comprehensive financial AI agent system that provides professional-grade finan
 - **⚡ Real-time Streaming**: Server-Sent Events for live response streaming
 - **🔐 Enterprise Security**: Rate limiting, input validation, and comprehensive error handling
 - **📊 Production Ready**: Docker, Kubernetes, and monitoring configurations included
+- **🤖 Powered by Groq**: Ultra-fast LLM inference using Groq's LPU technology
 
 ## 📋 Table of Contents
 
@@ -26,9 +27,12 @@ A comprehensive financial AI agent system that provides professional-grade finan
 ### Prerequisites
 
 - Python 3.11+
-- API Keys for external services:
-  - Groq API Key (for LLM operations)
-  - Phi API Key (for additional AI services)
+- Node.js 18+ (for frontend)
+- API Keys:
+  - **Groq API Key** (Required - FREE): For ultra-fast LLM inference
+    - Get it at: https://console.groq.com/keys
+  - **OpenAI API Key** (Optional - PAID): For GPT models if needed
+    - Get it at: https://platform.openai.com/api-keys
 
 ### Local Development
 
@@ -41,8 +45,11 @@ A comprehensive financial AI agent system that provides professional-grade finan
 
 2. **Configure API keys** in `.env`:
    ```bash
+   # Required - Get free key at https://console.groq.com/keys
    GROQ_API_KEY=your_groq_api_key_here
-   PHI_API_KEY=your_phi_api_key_here
+   
+   # Optional - Get at https://platform.openai.com/api-keys
+   OPENAI_API_KEY=your_openai_api_key_here
    ```
 
 3. **Install dependencies**:
@@ -224,13 +231,13 @@ mypy app/
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `GROQ_API_KEY` | Groq LLM API key | - | ✅ |
-| `PHI_API_KEY` | Phi API key | - | ✅ |
+| `GROQ_API_KEY` | Groq API key for LLM inference (FREE at console.groq.com) | - | ✅ |
+| `OPENAI_API_KEY` | OpenAI API key for GPT models (PAID, optional) | - | ❌ |
 | `DEBUG` | Enable debug mode | `false` | ❌ |
 | `LOG_LEVEL` | Logging level | `INFO` | ❌ |
 | `API_V1_PREFIX` | API version prefix | `/api/v1` | ❌ |
 | `CORS_ORIGINS` | Allowed CORS origins | `["*"]` | ❌ |
-| `DEFAULT_MODEL` | Default LLM model | `qwen/qwen3-32b` | ❌ |
+| `DEFAULT_MODEL` | Default LLM model (Groq) | `qwen/qwen3-32b` | ❌ |
 | `MAX_SOURCES` | Max research sources | `10` | ❌ |
 | `REQUEST_TIMEOUT` | Request timeout (seconds) | `300` | ❌ |
 
