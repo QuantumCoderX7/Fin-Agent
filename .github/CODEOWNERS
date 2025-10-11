@@ -1,0 +1,28 @@
+# Code Owners for Financial AI Agents
+# These owners will be automatically requested for review when someone opens a pull request
+
+# Default owners for everything in the repo
+* @QuantumCoderX7
+
+# Backend code
+/app/ @QuantumCoderX7
+/tests/ @QuantumCoderX7
+
+# Frontend code
+/frontend/ @QuantumCoderX7
+
+# Configuration files
+/.github/ @QuantumCoderX7
+/config/ @QuantumCoderX7
+*.yml @QuantumCoderX7
+*.yaml @QuantumCoderX7
+
+# Documentation
+/docs/ @QuantumCoderX7
+*.md @QuantumCoderX7
+
+# Security-sensitive files
+.env.example @QuantumCoderX7
+requirements.txt @QuantumCoderX7
+Dockerfile @QuantumCoderX7
+docker-compose*.yml @QuantumCoderX7
