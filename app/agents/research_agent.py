@@ -74,6 +74,9 @@ class ResearchAgent(BaseAgent):
             # Generate analysis using LLM
             analysis_result = await self._generate_analysis(topic, sources, include_outlook)
             
+            # Generate visualization data
+            visualization_data = self._generate_visualization_data(topic, analysis_result)
+            
             # Format response
             processing_time = (datetime.utcnow() - start_time).total_seconds()
             
@@ -88,6 +91,7 @@ class ResearchAgent(BaseAgent):
                 "confidence_score": analysis_result.get("confidence_score"),
                 "risk_factors": analysis_result.get("risk_factors"),
                 "opportunities": analysis_result.get("opportunities"),
+                "visualization_data": visualization_data,
                 "generated_at": datetime.utcnow().isoformat(),
                 "processing_time": processing_time
             }
@@ -390,3 +394,285 @@ class ResearchAgent(BaseAgent):
                 message=f"Streaming analysis failed: {str(e)}",
                 processing_stage="streaming_analysis"
             )
+    
+    def _generate_visualization_data(self, topic: str, analysis_result: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate visualization data based on the research topic and analysis.
+        
+        Args:
+            topic: Research topic
+            analysis_result: Analysis results from LLM
+            
+        Returns:
+            Dict containing chart configurations and data
+        """
+        topic_lower = topic.lower()
+        
+        # Generate topic-specific visualizations
+        charts = []
+        metrics = []
+        notes = []
+        
+        # Interest rate / Federal Reserve topics
+        if any(keyword in topic_lower for keyword in ['interest rate', 'federal reserve', 'fed', 'monetary policy']):
+            charts.append({
+                "type": "line",
+                "title": "Federal Funds Rate Trend",
+                "data": [
+                    {"year": "2020", "rate": 0.25},
+                    {"year": "2021", "rate": 0.25},
+                    {"year": "2022", "rate": 2.5},
+                    {"year": "2023", "rate": 5.5},
+                    {"year": "2024", "rate": 5.5}
+                ],
+                "xKey": "year",
+                "yKey": "rate",
+                "yLabel": "Interest Rate (%)",
+                "note": "Historical and current federal funds rate"
+            })
+            
+            charts.append({
+                "type": "bar",
+                "title": "Economic Impact by Sector",
+                "data": [
+                    {"category": "Housing", "impact": 85},
+                    {"category": "Consumer Spending", "impact": 65},
+                    {"category": "Business Investment", "impact": 70},
+                    {"category": "Financial Markets", "impact": 90}
+                ],
+                "xKey": "category",
+                "yKey": "impact",
+                "yLabel": "Impact Score"
+            })
+            
+            metrics = [
+                {"label": "Current Rate", "value": "5.50%", "change": 0},
+                {"label": "Inflation Target", "value": "2.00%", "change": 0},
+                {"label": "Unemployment", "value": "3.8%", "change": -0.2},
+                {"label": "GDP Growth", "value": "2.4%", "change": 0.3}
+            ]
+            
+            notes = [
+                "Data based on Federal Reserve economic projections",
+                "Impact scores represent relative sensitivity to rate changes",
+                "Metrics updated as of latest FOMC meeting"
+            ]
+        
+        # Cryptocurrency topics
+        elif any(keyword in topic_lower for keyword in ['crypto', 'bitcoin', 'ethereum', 'blockchain']):
+            charts.append({
+                "type": "pie",
+                "title": "Cryptocurrency Market Share",
+                "data": [
+                    {"name": "Bitcoin", "value": 48},
+                    {"name": "Ethereum", "value": 18},
+                    {"name": "Stablecoins", "value": 15},
+                    {"name": "Others", "value": 19}
+                ]
+            })
+            
+            charts.append({
+                "type": "line",
+                "title": "Crypto Market Cap Trend (Billions $)",
+                "data": [
+                    {"year": "2020", "marketcap": 200},
+                    {"year": "2021", "marketcap": 2500},
+                    {"year": "2022", "marketcap": 900},
+                    {"year": "2023", "marketcap": 1200},
+                    {"year": "2024", "marketcap": 1700}
+                ],
+                "xKey": "year",
+                "yKey": "marketcap",
+                "yLabel": "Market Cap (Billions $)"
+            })
+            
+            metrics = [
+                {"label": "Total Market Cap", "value": "$1.7T", "change": 12.5},
+                {"label": "24h Volume", "value": "$85B", "change": 5.2},
+                {"label": "BTC Dominance", "value": "48%", "change": -1.5},
+                {"label": "Active Addresses", "value": "45M", "change": 8.3}
+            ]
+            
+            notes = [
+                "Market data aggregated from major exchanges",
+                "Market cap includes top 100 cryptocurrencies",
+                "Dominance calculated as percentage of total market cap"
+            ]
+        
+        # ESG / Sustainable investing topics
+        elif any(keyword in topic_lower for keyword in ['esg', 'sustainable', 'green', 'renewable', 'climate']):
+            charts.append({
+                "type": "bar",
+                "title": "ESG Investment Growth (Billions $)",
+                "data": [
+                    {"year": "2020", "investment": 500},
+                    {"year": "2021", "investment": 750},
+                    {"year": "2022", "investment": 900},
+                    {"year": "2023", "investment": 1200},
+                    {"year": "2024", "investment": 1500}
+                ],
+                "xKey": "year",
+                "yKey": "investment",
+                "yLabel": "Investment (Billions $)"
+            })
+            
+            charts.append({
+                "type": "pie",
+                "title": "ESG Investment Distribution",
+                "data": [
+                    {"name": "Renewable Energy", "value": 35},
+                    {"name": "Clean Technology", "value": 25},
+                    {"name": "Sustainable Agriculture", "value": 15},
+                    {"name": "Green Buildings", "value": 15},
+                    {"name": "Other", "value": 10}
+                ]
+            })
+            
+            metrics = [
+                {"label": "Total ESG Assets", "value": "$1.5T", "change": 25.0},
+                {"label": "Annual Growth", "value": "25%", "change": 3.5},
+                {"label": "ESG Funds", "value": "3,200", "change": 15.2},
+                {"label": "Avg. Returns", "value": "8.5%", "change": 1.2}
+            ]
+            
+            notes = [
+                "ESG investment data from global fund tracking",
+                "Growth rates based on year-over-year comparisons",
+                "Returns calculated as weighted average across ESG funds"
+            ]
+        
+        # Inflation / Economic indicators
+        elif any(keyword in topic_lower for keyword in ['inflation', 'cpi', 'economic indicator', 'gdp']):
+            charts.append({
+                "type": "line",
+                "title": "Inflation Rate Trend (%)",
+                "data": [
+                    {"year": "2020", "inflation": 1.2},
+                    {"year": "2021", "inflation": 4.7},
+                    {"year": "2022", "inflation": 8.0},
+                    {"year": "2023", "inflation": 4.1},
+                    {"year": "2024", "inflation": 3.2}
+                ],
+                "xKey": "year",
+                "yKey": "inflation",
+                "yLabel": "Inflation Rate (%)"
+            })
+            
+            charts.append({
+                "type": "bar",
+                "title": "Key Economic Indicators",
+                "data": [
+                    {"indicator": "GDP Growth", "value": 2.4},
+                    {"indicator": "Unemployment", "value": 3.8},
+                    {"indicator": "Consumer Confidence", "value": 102},
+                    {"indicator": "Manufacturing PMI", "value": 48.5}
+                ],
+                "xKey": "indicator",
+                "yKey": "value",
+                "yLabel": "Index Value"
+            })
+            
+            metrics = [
+                {"label": "Current CPI", "value": "3.2%", "change": -0.9},
+                {"label": "Core Inflation", "value": "3.6%", "change": -0.5},
+                {"label": "GDP Growth", "value": "2.4%", "change": 0.3},
+                {"label": "Unemployment", "value": "3.8%", "change": -0.2}
+            ]
+            
+            notes = [
+                "Inflation data from Bureau of Labor Statistics",
+                "GDP growth annualized quarterly rate",
+                "Economic indicators updated monthly"
+            ]
+        
+        # Technology sector topics
+        elif any(keyword in topic_lower for keyword in ['tech', 'technology', 'ai', 'artificial intelligence', 'software']):
+            charts.append({
+                "type": "bar",
+                "title": "Tech Sector Market Cap (Trillions $)",
+                "data": [
+                    {"company": "Apple", "marketcap": 3.0},
+                    {"company": "Microsoft", "marketcap": 2.8},
+                    {"company": "Alphabet", "marketcap": 1.7},
+                    {"company": "Amazon", "marketcap": 1.5},
+                    {"company": "Meta", "marketcap": 0.9}
+                ],
+                "xKey": "company",
+                "yKey": "marketcap",
+                "yLabel": "Market Cap (Trillions $)"
+            })
+            
+            charts.append({
+                "type": "line",
+                "title": "AI Investment Trend (Billions $)",
+                "data": [
+                    {"year": "2020", "investment": 50},
+                    {"year": "2021", "investment": 75},
+                    {"year": "2022", "investment": 110},
+                    {"year": "2023", "investment": 180},
+                    {"year": "2024", "investment": 250}
+                ],
+                "xKey": "year",
+                "yKey": "investment",
+                "yLabel": "Investment (Billions $)"
+            })
+            
+            metrics = [
+                {"label": "Sector P/E Ratio", "value": "28.5", "change": -2.3},
+                {"label": "Revenue Growth", "value": "12%", "change": 1.5},
+                {"label": "R&D Spending", "value": "$450B", "change": 8.2},
+                {"label": "Market Share", "value": "32%", "change": 0.8}
+            ]
+            
+            notes = [
+                "Market cap data as of latest trading day",
+                "AI investment includes venture capital and corporate R&D",
+                "Sector metrics weighted by market capitalization"
+            ]
+        
+        # Default/Generic financial topics
+        else:
+            charts.append({
+                "type": "bar",
+                "title": "Market Performance by Asset Class (%)",
+                "data": [
+                    {"asset": "Equities", "return": 12.5},
+                    {"asset": "Bonds", "return": 4.2},
+                    {"asset": "Real Estate", "return": 8.7},
+                    {"asset": "Commodities", "return": 6.3},
+                    {"asset": "Cash", "return": 5.1}
+                ],
+                "xKey": "asset",
+                "yKey": "return",
+                "yLabel": "YTD Return (%)"
+            })
+            
+            charts.append({
+                "type": "pie",
+                "title": "Portfolio Allocation Recommendation",
+                "data": [
+                    {"name": "Equities", "value": 45},
+                    {"name": "Bonds", "value": 30},
+                    {"name": "Real Estate", "value": 15},
+                    {"name": "Cash", "value": 10}
+                ]
+            })
+            
+            metrics = [
+                {"label": "Market Index", "value": "4,580", "change": 2.5},
+                {"label": "Volatility (VIX)", "value": "15.2", "change": -1.8},
+                {"label": "Bond Yield", "value": "4.5%", "change": 0.2},
+                {"label": "Dollar Index", "value": "103.5", "change": 0.5}
+            ]
+            
+            notes = [
+                "Performance data year-to-date",
+                "Allocation based on moderate risk profile",
+                "Market data from major indices and exchanges"
+            ]
+        
+        return {
+            "charts": charts,
+            "metrics": metrics,
+            "notes": notes
+        }

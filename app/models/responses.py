@@ -157,6 +157,11 @@ class ResearchResponse(BaseResponse):
         None,
         description="Identified opportunities"
     )
+    
+    visualization_data: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Data for visualizations including charts and metrics"
+    )
 
 
 class StockMetrics(BaseModel):
