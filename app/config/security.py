@@ -23,8 +23,8 @@ class SecurityConfig:
     GROQ_API_KEY_PREFIX = "gsk_"
     GROQ_API_KEY_MIN_LENGTH = 50
     
-    PHI_API_KEY_PREFIX = "sk-"
-    PHI_API_KEY_MIN_LENGTH = 40
+    OPENAI_API_KEY_PREFIX = "sk-"
+    OPENAI_API_KEY_MIN_LENGTH = 40
     
     # Rate limiting defaults
     DEFAULT_RATE_LIMIT_PER_MINUTE = 60
@@ -115,10 +115,10 @@ class SecurityValidator:
                 key.startswith(SecurityConfig.GROQ_API_KEY_PREFIX) and
                 len(key) >= SecurityConfig.GROQ_API_KEY_MIN_LENGTH
             )
-        elif key_type.lower() == "phi":
+        elif key_type.lower() == "openai":
             return (
-                key.startswith(SecurityConfig.PHI_API_KEY_PREFIX) and
-                len(key) >= SecurityConfig.PHI_API_KEY_MIN_LENGTH
+                key.startswith(SecurityConfig.OPENAI_API_KEY_PREFIX) and
+                len(key) >= SecurityConfig.OPENAI_API_KEY_MIN_LENGTH
             )
         
         return False
@@ -299,8 +299,8 @@ def validate_security_settings(settings) -> List[str]:
     if not SecurityValidator.is_valid_api_key_format(settings.groq_api_key, "groq"):
         issues.append("Invalid GROQ API key format")
     
-    if not SecurityValidator.is_valid_api_key_format(settings.phi_api_key, "phi"):
-        issues.append("Invalid PHI API key format")
+    if not SecurityValidator.is_valid_api_key_format(settings.openai_api_key, "openai"):
+        issues.append("Invalid OPENAI API key format")
     
     # Validate CORS settings
     if not SecurityValidator.validate_cors_origins(settings.cors_origins, not settings.debug):

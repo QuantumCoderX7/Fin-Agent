@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     
     # API Keys
     groq_api_key: str = ""
-    phi_api_key: str = ""
+    openai_api_key: str = ""
     
     # Application Settings
     app_name: str = "Financial AI Agents"
@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     
     def validate_api_keys(self) -> None:
         """Validate that required API keys are configured with proper format."""
+        # Skip validation in debug mode for development
+        if self.debug:
+            print("⚠️  DEBUG MODE: Skipping API key validation")
+            print("⚠️  WARNING: API calls will fail without valid keys!")
+            return
+        
         missing_keys = []
         invalid_keys = []
         
@@ -66,18 +72,18 @@ class Settings(BaseSettings):
         elif not self._is_valid_groq_key(self.groq_api_key):
             invalid_keys.append("GROQ_API_KEY (must start with 'gsk_' and be at least 50 characters)")
         
-        # Check PHI API key  
-        if not self.phi_api_key:
-            missing_keys.append("PHI_API_KEY")
-        elif not self._is_valid_phi_key(self.phi_api_key):
-            invalid_keys.append("PHI_API_KEY (must start with 'sk-' and be at least 40 characters)")
+        # Check OpenAI API key  
+        if not self.openai_api_key:
+            missing_keys.append("OPENAI_API_KEY")
+        elif not self._is_valid_openai_key(self.openai_api_key):
+            invalid_keys.append("OPENAI_API_KEY (must start with 'sk-' and be at least 40 characters)")
         
         # Raise appropriate exceptions
         if missing_keys:
             raise APIKeyMissingException(
                 f"Missing required API keys: {', '.join(missing_keys)}. "
                 f"Please set these environment variables or add them to your .env file. "
-                f"Example format: GROQ_API_KEY=gsk_... and PHI_API_KEY=sk-..."
+                f"Example format: GROQ_API_KEY=gsk_... and OPENAI_API_KEY=sk-..."
             )
         
         if invalid_keys:
@@ -90,9 +96,9 @@ class Settings(BaseSettings):
         """Validate GROQ API key format."""
         return SecurityValidator.is_valid_api_key_format(key, "groq")
     
-    def _is_valid_phi_key(self, key: str) -> bool:
-        """Validate PHI API key format.""" 
-        return SecurityValidator.is_valid_api_key_format(key, "phi")
+    def _is_valid_openai_key(self, key: str) -> bool:
+        """Validate OpenAI API key format.""" 
+        return SecurityValidator.is_valid_api_key_format(key, "openai")
     
     def validate_security_settings(self) -> None:
         """Validate security-related settings."""

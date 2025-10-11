@@ -105,7 +105,7 @@ def create_app() -> FastAPI:
         # Check API key availability (without exposing values)
         api_keys_status = {
             "groq_api_key": bool(settings.groq_api_key),
-            "phi_api_key": bool(settings.phi_api_key)
+            "openai_api_key": bool(settings.openai_api_key)
         }
         
         # Get streaming statistics
