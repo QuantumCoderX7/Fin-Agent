@@ -1,0 +1,68 @@
+#!/bin/sh
+# Git commit message hook to enforce conventional commit format
+# Place this file in .git/hooks/commit-msg and make it executable
+
+commit_regex='^(feat|fix|docs|style|refactor|test|chore|security|perf|ci)(\(.+\))?: .{1,72}'
+breaking_change_regex='BREAKING CHANGE:'
+
+error_msg="Invalid commit message format!
+
+Commit message should follow conventional commit format:
+<type>(<scope>): <description>
+
+Types: feat, fix, docs, style, refactor, test, chore, security, perf, ci
+Scope: optional, e.g., (api), (frontend), (docs)
+Description: present tense, under 72 characters
+
+Examples:
+  feat(api): add user authentication endpoint
+  fix(frontend): resolve chart rendering issue
+  docs(readme): update installation instructions
+  security(auth): implement rate limiting
+
+For breaking changes, include 'BREAKING CHANGE:' in the commit body.
+
+Current commit message:
+$(cat $1)
+"
+
+# Read the commit message
+commit_message=$(cat "$1")
+
+# Check if commit message matches the pattern
+if ! echo "$commit_message" | grep -qE "$commit_regex"; then
+    echo "$error_msg"
+    exit 1
+fi
+
+# Check for security-sensitive keywords that might indicate secrets
+security_keywords="password|secret|key|token|api_key|private"
+if echo "$commit_message" | grep -iE "$security_keywords" > /dev/null; then
+    echo "⚠️  WARNING: Commit message contains security-sensitive keywords."
+    echo "Please ensure no actual secrets are included in the commit."
+    echo ""
+    echo "If this is intentional (e.g., 'fix: update API key validation'), you can proceed."
+    echo "Otherwise, please revise your commit message."
+    echo ""
+    read -p "Continue with this commit? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Commit aborted."
+        exit 1
+    fi
+fi
+
+# Check for common typos and suggest corrections
+if echo "$commit_message" | grep -qE "(teh|recieve|seperate|occured|definately)"; then
+    echo "⚠️  Possible typos detected in commit message. Please review."
+fi
+
+# Suggest adding issue reference if not present
+if ! echo "$commit_message" | grep -qE "(closes|fixes|resolves) #[0-9]+"; then
+    if [ ${#commit_message} -lt 200 ]; then  # Only suggest for shorter messages
+        echo "💡 Consider adding an issue reference like 'Closes #123' if applicable."
+    fi
+fi
+
+echo "✅ Commit message format is valid."
+exit 0
