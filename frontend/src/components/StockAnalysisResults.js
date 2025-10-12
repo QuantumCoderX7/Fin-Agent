@@ -4,6 +4,8 @@ import {
   ArrowUp, ArrowDown, Zap, Target, 
   BarChart2, ShieldAlert, CheckCircle2
 } from 'lucide-react';
+import ValuationCharts from './ValuationCharts';
+import ComparativeAnalysisSections from './ComparativeAnalysisSections';
 
 const StockMetrics = ({ metrics }) => {
   if (!metrics) return null;
@@ -173,9 +175,84 @@ const StockAnalysisResults = ({
       ))}
 
       {comparison_summary && analyses.length > 1 && (
-        <div className="card prose max-w-none">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Comparative Analysis</h2>
-          <div className="text-gray-700 whitespace-pre-wrap">{comparison_summary}</div>
+        <div className="card">
+          <div className="flex items-center space-x-3 mb-6">
+            <BarChart2 className="h-6 w-6 text-primary-600" />
+            <h2 className="text-2xl font-bold text-gray-900">Comparative Analysis</h2>
+          </div>
+
+          {/* Visual comparison section */}
+          {analyses.length > 1 && (
+            <div className="mb-8">
+              <ValuationCharts analyses={analyses} />
+            </div>
+          )}
+
+          {/* Text analysis sections */}
+          <ComparativeAnalysisSections content={comparison_summary} />
+        </div>
+      )}
+
+      {/* Quick Stats Summary */}
+      {analyses.length > 1 && (
+        <div className="mt-8 pt-8 border-t border-gray-200">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Quick Comparison</h4>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P/E Ratio</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Cap</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {analyses.map((analysis) => (
+                  <tr key={analysis.symbol} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-gray-900">{analysis.symbol}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD'
+                      }).format(analysis.metrics.current_price)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {analysis.metrics.pe_ratio?.toFixed(2) || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {analysis.metrics.market_cap > 1e9
+                        ? `$${(analysis.metrics.market_cap / 1e9).toFixed(2)}B`
+                        : analysis.metrics.market_cap > 1e6
+                        ? `$${(analysis.metrics.market_cap / 1e6).toFixed(2)}M`
+                        : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        analysis.risk_level === 'LOW' ? 'bg-green-100 text-green-800' :
+                        analysis.risk_level === 'HIGH' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {analysis.risk_level}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {analysis.target_price
+                        ? new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: 'USD'
+                          }).format(analysis.target_price)
+                        : 'N/A'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

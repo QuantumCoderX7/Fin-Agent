@@ -363,6 +363,31 @@ class StockAgent(BaseAgent):
                 "catalysts": ["Market dynamics"]
             }
     
+    def _format_pe_groups(self, high_pe: List[Dict], medium_pe: List[Dict], low_pe: List[Dict]) -> str:
+        """Format P/E ratio groups into a readable string."""
+        def format_pe_group(stocks: List[Dict], category: str) -> str:
+            if not stocks:
+                return ""
+            stocks_str = ', '.join(f"{s['symbol']} ({s['pe_ratio']:.2f}x - {s['pe_assessment']})" for s in stocks)
+            return f"{category} ({len(stocks)} stock{'s' if len(stocks) > 1 else ''}): {stocks_str}"
+        
+        groups = []
+        if high_pe:
+            groups.append(format_pe_group(high_pe, "High P/E"))
+        if medium_pe:
+            groups.append(format_pe_group(medium_pe, "Medium P/E"))
+        if low_pe:
+            groups.append(format_pe_group(low_pe, "Low P/E"))
+        return '\n'.join(groups)
+
+    def _format_market_caps(self, comparison_data: List[Dict]) -> str:
+        """Format market cap data into a readable string."""
+        sorted_data = sorted(comparison_data, key=lambda x: x["market_cap"] or 0, reverse=True)
+        return ' '.join([
+            f"{d['symbol']} ({d['market_cap_str']})"
+            for d in sorted_data if d["market_cap_str"] != "N/A"
+        ]) + "."
+
     async def compare_stocks(self, analyses: List[StockAnalysis]) -> str:
         """
         Generate comparative analysis between multiple stocks.
@@ -377,36 +402,100 @@ class StockAgent(BaseAgent):
             return "Comparative analysis requires at least 2 stocks."
         
         try:
-            # Prepare comparison data
+            # Sort stocks by market cap
+            sorted_analyses = sorted(analyses, key=lambda x: x.metrics.market_cap or 0, reverse=True)
+            
+            # Prepare comparison data with calculated metrics
             comparison_data = []
-            for analysis in analyses:
+            max_pe = max((a.metrics.pe_ratio or 0) for a in analyses)
+            for analysis in sorted_analyses:
+                pe_ratio = analysis.metrics.pe_ratio or 0
+                pe_assessment = (
+                    "significantly overvalued" if pe_ratio > 100 else
+                    "overvalued" if pe_ratio > 50 else
+                    "premium valuation" if pe_ratio > 30 else
+                    "moderately valued" if pe_ratio > 20 else
+                    "attractively valued" if pe_ratio > 0 else
+                    "N/A"
+                )
+                
+                market_cap_str = (
+                    f"${analysis.metrics.market_cap/1e12:.1f}T" if analysis.metrics.market_cap >= 1e12 else
+                    f"${analysis.metrics.market_cap/1e9:.1f}B" if analysis.metrics.market_cap >= 1e9 else
+                    "N/A"
+                )
+                
                 comparison_data.append({
                     "symbol": analysis.symbol,
                     "company": analysis.company_name,
                     "recommendation": analysis.recommendation,
                     "risk_level": analysis.risk_level,
                     "current_price": analysis.metrics.current_price,
-                    "pe_ratio": analysis.metrics.pe_ratio,
+                    "pe_ratio": pe_ratio,
+                    "pe_assessment": pe_assessment,
                     "market_cap": analysis.metrics.market_cap,
-                    "strengths_count": len(analysis.strengths),
-                    "weaknesses_count": len(analysis.weaknesses)
+                    "market_cap_str": market_cap_str,
+                    "beta": analysis.metrics.beta,
+                    "dividend_yield": analysis.metrics.dividend_yield,
+                    "sector": "N/A"  # Could be enhanced with sector data
                 })
             
-            # Create comparison prompt
+            # Group stocks by valuation and risk
+            high_pe = [d for d in comparison_data if d["pe_ratio"] > 50]
+            medium_pe = [d for d in comparison_data if 20 <= d["pe_ratio"] <= 50]
+            low_pe = [d for d in comparison_data if 0 < d["pe_ratio"] < 20]
+            
+            high_risk = [d for d in comparison_data if d["risk_level"] == "HIGH"]
+            medium_risk = [d for d in comparison_data if d["risk_level"] == "MEDIUM"]
+            low_risk = [d for d in comparison_data if d["risk_level"] == "LOW"]
+            
+            # Create structured comparison prompt
             prompt = f"""
-            As a professional portfolio analyst, compare the following stocks and provide investment insights:
+            As a professional portfolio analyst, provide a structured comparative analysis with the following format:
+
+            1. Relative Valuation Comparison
+
+            P/E Ratios:
+            {self._format_pe_groups(high_pe, medium_pe, low_pe)}
+
+            Market Caps:
+            {self._format_market_caps(comparison_data)}
+
+            Value Groups:
+            High P/E ({len(high_pe)} stock{'' if len(high_pe) == 1 else 's'}): {', '.join(d['symbol'] for d in high_pe) or 'None'}.
+            Medium P/E ({len(medium_pe)} stock{'' if len(medium_pe) == 1 else 's'}): {', '.join(d['symbol'] for d in medium_pe) or 'None'}.
+            Low P/E ({len(low_pe)} stock{'' if len(low_pe) == 1 else 's'}): {', '.join(d['symbol'] for d in low_pe) or 'None'}.
+
+            2. Risk-Adjusted Recommendations
+
+            Risk Distribution:
+            High Risk ({len(high_risk)} stock{'' if len(high_risk) == 1 else 's'}):
+            {self._format_risk_group(high_risk)}
+
+            Medium Risk ({len(medium_risk)} stock{'' if len(medium_risk) == 1 else 's'}):
+            {self._format_risk_group(medium_risk)}
+
+            Low Risk ({len(low_risk)} stock{'' if len(low_risk) == 1 else 's'}):
+            {self._format_risk_group(low_risk)}
+
+            **3. Portfolio Allocation Suggestions**
+            Based on:
+            - Risk levels and market caps
+            - P/E ratios and growth potential
+            - Sector diversification
+
+            **4. Sector/Industry Considerations**
+            For each stock:
+            {chr(10).join(f'**{d["symbol"]}**: Core business and key drivers' for d in comparison_data)}
+
+            **5. Overall Investment Thesis**
+            Concise thesis for each stock:
+            {chr(10).join(f'**{d["symbol"]}**: **{d["recommendation"]}** – Key rationale' for d in comparison_data)}
+
+            End with an **Actionable Insight** summarizing the key recommendations.
             
-            {json.dumps(comparison_data, indent=2)}
-            
-            Provide a comparative analysis covering:
-            1. Relative valuation comparison
-            2. Risk-adjusted recommendations
-            3. Portfolio allocation suggestions
-            4. Sector/industry considerations
-            5. Overall investment thesis for each stock
-            
-            Format as a professional investment report. Do not include any <think> tags or preparation notes in the output.
-            Keep responses concise and focused on actionable insights. Skip boilerplate like 'Prepared by' or disclaimers.
+            Format the analysis professionally, highlighting key metrics and actionable insights.
+            Skip any preparation notes or disclaimers.
             """
             
             comparison_response = await self._get_ai_analysis(prompt)

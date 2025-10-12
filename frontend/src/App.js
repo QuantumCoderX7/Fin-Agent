@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Research from './pages/Research';
@@ -9,9 +10,10 @@ import SystemStatus from './pages/SystemStatus';
 
 function App() {
   return (
-    <Router>
-      <Layout>
-        <Routes>
+    <ThemeProvider>
+      <Router>
+        <Layout>
+          <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/research" element={<Research />} />
           <Route path="/stocks" element={<StockAnalysis />} />
@@ -20,6 +22,7 @@ function App() {
         </Routes>
       </Layout>
     </Router>
+    </ThemeProvider>
   );
 }
 

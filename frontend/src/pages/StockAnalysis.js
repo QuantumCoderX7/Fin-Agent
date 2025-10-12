@@ -309,36 +309,44 @@ const StockAnalysis = () => {
             )}
 
             {/* Submit Buttons */}
-            <div className="flex space-x-4">
+            <div className="grid grid-cols-2 gap-4">
               <button
                 type="submit"
                 disabled={isAnalyzing || isStreaming}
-                className="btn-primary flex-1"
+                className={`btn-primary min-w-[140px] h-10 flex items-center justify-center ${
+                  isAnalyzing ? 'cursor-not-allowed opacity-75' : ''
+                }`}
               >
-                {isAnalyzing ? (
-                  <>
-                    <LoadingSpinner size="sm" />
-                    <span className="ml-2">Analyzing...</span>
-                  </>
-                ) : (
-                  'Analyze Stocks'
-                )}
+                <div className="flex items-center justify-center w-full">
+                  {isAnalyzing ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" />
+                      <span>Analyzing...</span>
+                    </>
+                  ) : (
+                    <span>Analyze Stocks</span>
+                  )}
+                </div>
               </button>
               
               <button
                 type="button"
                 onClick={(e) => handleSubmit(e, true)}
                 disabled={isAnalyzing || isStreaming}
-                className="btn-secondary flex-1"
+                className={`btn-secondary min-w-[140px] h-10 flex items-center justify-center ${
+                  isStreaming ? 'cursor-not-allowed opacity-75' : ''
+                }`}
               >
-                {isStreaming ? (
-                  <>
-                    <LoadingSpinner size="sm" />
-                    <span className="ml-2">Streaming...</span>
-                  </>
-                ) : (
-                  'Stream Analysis'
-                )}
+                <div className="flex items-center justify-center w-full">
+                  {isStreaming ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" />
+                      <span>Streaming...</span>
+                    </>
+                  ) : (
+                    <span>Stream Analysis</span>
+                  )}
+                </div>
               </button>
             </div>
           </form>
