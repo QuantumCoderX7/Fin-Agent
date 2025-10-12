@@ -22,9 +22,14 @@ jobs:
           pip install flake8 black isort
       - name: Run linters
         run: |
-          flake8 . --count --max-line-length=120 --exclude=.git,__pycache__,build,dist
-          black . --check
-          isort . --check-only
+          # Run black first to ensure consistent formatting
+          python -m black . --check || (echo "Black formatting check failed. Run 'black .' locally to fix." && exit 1)
+          
+          # Run isort to check import ordering
+          python -m isort . --check-only --diff || (echo "Import ordering check failed. Run 'isort .' locally to fix." && exit 1)
+          
+          # Run flake8 for additional style checks
+          python -m flake8 . || (echo "Flake8 check failed. Please fix the above issues." && exit 1)
 
   frontend-build:
     name: Frontend Build Check
